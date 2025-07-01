@@ -10,6 +10,7 @@ PYPI_SOURCE = "https://mirrors.aliyun.com/pypi/simple/"
 NCATBOT_PATH = "ncatbot"
 TEST_PLUGIN = "TestPlugin"
 NUMBER_SAVE = "number.txt"
+ADMIN_SAVE = "admin.txt"
 PLUGIN_INDEX = {}
 
 # Initialize logger
@@ -28,6 +29,14 @@ def get_qq() -> str:
     install("TestPlugin")
     return set_qq()
 
+def get_admin() -> str:
+    """Get the admin QQ number from the saved file."""
+    from ncatbot.cli.system_commands import set_admin
+    if os.path.exists(ADMIN_SAVE):
+        with open(ADMIN_SAVE, "r") as f:
+            return f.read()
+    else:
+        return set_admin()
 
 def get_plugin_info(path: str):
     if os.path.exists(path):

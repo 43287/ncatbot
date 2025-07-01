@@ -8,6 +8,7 @@ from ncatbot.adapter.nc.install import install_napcat
 from ncatbot.cli.registry import registry
 from ncatbot.cli.utils import (
     NUMBER_SAVE,
+    ADMIN_SAVE,
     PYPI_SOURCE,
 )
 from ncatbot.core import BotClient
@@ -32,17 +33,35 @@ def set_qq() -> str:
         f.write(qq)
     return qq
 
+@registry.register("setadmin","设置管理员QQ号","setadmin",aliases=["admin"])
+def set_admin() -> str:
+    """Set or update the admin QQ number."""
+    # 提示输入, 确认输入, 保存到文件
+    qq = input("请输入管理员QQ号: ")
+    if not qq.isdigit():
+        print("QQ 号必须为数字!")
+        return set_admin()
+
+    qq_confirm = input(f"请再输入一遍管理员QQ号 {qq} 并确认: ")
+    if qq != qq_confirm:
+        print("两次输入的 QQ 号不一致!")
+        return set_admin()
+    with open(ADMIN_SAVE, "w") as f:
+        f.write(qq)
+
 
 @registry.register(
     "start", "启动 NcatBot", "start [-d|-D|--debug]", aliases=["s", "run"]
 )
 def start(*args: str) -> None:
     """Start the NcatBot client."""
-    from ncatbot.cli.utils import LOG, get_qq
+    from ncatbot.cli.utils import LOG, get_qq,get_admin
 
     print("正在启动 NcatBot...")
     print("按下 Ctrl + C 可以正常退出程序")
     config.set_bot_uin(get_qq())
+    config.set_root(get_admin())
+
     try:
         client = BotClient()
         client.run(

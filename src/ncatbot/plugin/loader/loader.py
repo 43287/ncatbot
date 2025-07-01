@@ -475,6 +475,20 @@ class PluginLoader:
                 f"插件目录: {os.path.abspath(plugins_path)} 不存在......跳过加载插件"
             )
 
+    def load_compatible_data_for_sigle_plugin(self,plugin:BasePlugin):
+        """
+        为单个插件加载兼容注册
+        """
+        for event_type, packs in CompatibleEnrollment.events.items():
+            for func, priority, in_class in packs:
+                if in_class:
+                    if (plugin.name == func.__qualname__.split(".")[0]):
+                        func = MethodType(func, plugin)
+                        plugin.register_handler(event_type, func, priority)
+                else:
+                    LOG.warning("该方法即将弃用...")
+                    self.event_bus.subscribe(event_type, func, priority)
+
     def load_compatible_data(self):
         """
         加载兼容注册事件
@@ -504,6 +518,15 @@ class PluginLoader:
             return
 
         self.event_bus.remove_plugin(self.plugins[plugin_name])
+
+        # 清除在CompatibleEnrollment中注册的事件
+        for event_type in CompatibleEnrollment.events.keys():
+            CompatibleEnrollment.events[event_type] = [
+                handler
+                for handler in CompatibleEnrollment.events[event_type]
+                if handler[0].__qualname__.split('.')[0] != plugin_name
+            ]
+
         await self.plugins[plugin_name].__unload__(*arg, **kwd)
         del self.plugins[plugin_name]
 
@@ -642,6 +665,9 @@ class PluginLoader:
                 # 添加到插件列表
                 self.plugins[plugin_name] = new_plugin
                 self.event_bus.add_plugin(new_plugin)
+
+                # 重新注册事件
+                self.load_compatible_data_for_sigle_plugin(new_plugin)
 
                 LOG.info(f"插件 {plugin_name} 重载成功")
             except Exception as e:
